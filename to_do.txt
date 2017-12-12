@@ -1,0 +1,4 @@
+- add an initial dataset
+- create a crossfilter on it
+- plot a histogram of a single variable
+- plot a scatterplot of two variables
