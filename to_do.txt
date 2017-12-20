@@ -1,4 +1,9 @@
-- add an initial dataset
-- create a crossfilter on it
-- plot a histogram of a single variable
-- plot a scatterplot of two variables
+- initial dataset:
+	- plot a scatterplot of two variables
+	- add filtering
+
+- figure out how to deal with categorical data
+
+- figure out how to upload a dataset
+
+- allow the user to change the number of bins
