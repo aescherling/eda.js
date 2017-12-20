@@ -1,111 +1,127 @@
-// load data
 
+// create an svg - everything will be drawn on this
+var svg = d3.select('#viz').append('svg')
+	.attr('height', '400px')
+	.attr('width', '400px');
+
+// create a histogram group
+var histogram = svg.append('g')
+	.attr('id','histogram')
+	.attr('transform','translate(100,100)');
+
+// histogram.append('rect').attr('x',100).attr('y',100).attr('width',100).attr('height',100).attr('fill','black');
+
+// histogram dimensions
+var histHeight = 200;
+var histWidth = 200;
+
+// draw axes of histogram
+// default to (0,1) scale
+y_scale = d3.scaleLinear().domain([0,1]).range([histHeight, 0]);
+histogram.append('g')
+  .attr('class', 'axis yAxis')
+  .call(d3.axisLeft(y_scale).ticks(5));
+
+x_scale = d3.scaleLinear().domain([0,1]).range([0, histWidth]);
+histogram.append('g')
+  .attr('class', 'axis xAxis')
+  .attr('transform', 'translate(0,' + histHeight + ')')
+  .call(d3.axisBottom(x_scale).ticks(5));
+
+// function for calculating the counts necessary for producing a histogram
+// input: data, lower end of lowest bin, high end of highest bin, desired # of bins
+// output: JS object with variable "value" = count for each bin
+calcHist = function (x, low, high, bins) {
+  // scale the data & take floor to collapse into bins
+  histScale = d3.scaleLinear().domain([low, high]).range([0,bins]);
+  scaled = x.map(function(a) {return Math.floor(histScale(a));});
+
+	// find the # of points in each bin
+	hist = Array(bins);
+	for (i=0; i < hist.length; i++){
+	  bool = scaled.map(function (a) {return (a == i);});
+	  val = d3.sum(bool);
+	  hist[i] = val;
+	}
+
+  return hist;
+}
+
+
+// globally accessible data variables, primarily for debugging
 var myData;
 var myVar;
 
-// wait until all the data is loaded before proceeding
+
+// when the data have loaded, explore!
 queue()
   .defer(d3.csv, 'myData.csv')
-  .await(data_ready)
+  .await(explore)
 
 
 // d3.csv("myData.csv", function(data) {
 // 	myData = data;
 // });
 
-function data_ready(error, data) {
+// function to plot the data
+function explore(error, data) {
 	if (error) throw error;
 
 	// create crossfilter
 	var cf = crossfilter(data);
 
-	// create an svg
-	var svg = d3.select('#viz').append('svg')
-		.attr('height', '400px')
-		.attr('width', '400px');
-
-	// create a histogram
-	var hist_group = svg.append('g')
-		.attr('id','hist_group')
-		.attr('transform','translate(100,100)');
-
-	// histogram dimensions
-	var histHeight = 200;
-	var histWidth = 200;
-
-	// draw axes of histogram
-	// default to (0,1) scale
-	y_scale = d3.scaleLinear().domain([0,1]).range([histHeight, 0]);
-	hist_group.append('g')
-	  .attr('class', 'axis yAxis')
-	  .call(d3.axisLeft(y_scale).ticks(5));
-
-	x_scale = d3.scaleLinear().domain([0,1]).range([0, histWidth]);
-	hist_group.append('g')
-	  .attr('class', 'axis xAxis')
-	  .attr('transform', 'translate(0,' + histHeight + ')')
-	  .call(d3.axisBottom(x_scale).ticks(5));
-
-	// function for calculating the counts necessary for producing a histogram
-	// input: data, lower end of lowest bin, high end of highest bin, desired # of bins
-	// output: JS object with variable "value" = count for each bin
-	calcHist = function (x, low, high, bins) {
-	  // scale the data & take floor to collapse into bins
-	  histScale = d3.scaleLinear().domain([low, high]).range([0,bins]);
-	  scaled = x.map(function(a) {return Math.floor(histScale(a));});
-
-    	// find the # of points in each bin
-    	hist = Array(bins);
-    	for (i=0; i < hist.length; i++){
-    	  bool = scaled.map(function (a) {return (a == i);});
-    	  val = d3.sum(bool);
-    	  hist[i] = val;
-    	}
-
-  	  return hist;
-  	}
-
+	// for the test version, parse y variable from the test data
+	// in the actual version, the variable will be selected by the user
 	var y = data.map(function(d) {return d.y});
-	myVar = y;
+	var yMin = d3.min(y);
+	var yMax = d3.max(y);
 
+	// calculate the counts of the chosen variable using calcHist
 	var bins = 10;
-	histScaleX = d3.scaleLinear().domain([0, bins]).range([0, histWidth]);
-	hist_group.selectAll('.xBar')
-	    .data(y)
+	var counts = calcHist(y, Math.floor(yMin), Math.ceil(yMax), bins)
+	var stepSize = (Math.ceil(yMax) - Math.floor(yMin)) / bins;
+	myVar = counts;
+
+	// rescale/relabel x axis
+	histScaleX = d3.scaleLinear().domain([Math.floor(yMin), Math.ceil(yMax)]).range([0, histWidth]);
+	var barWidth = histScaleX(Math.floor(yMin) + stepSize);
+	d3.select('.xAxis').remove();
+	histogram.append('g')
+  		.attr('class', 'axis xAxis')
+  		.attr('transform', 'translate(0,' + histHeight + ')')
+  		.call(d3.axisBottom(histScaleX).ticks(5));
+
+  	// rescale/relabel y axis
+	histScaleY = d3.scaleLinear().domain([0, Math.ceil(d3.max(counts))]).range([histHeight, 0]);
+	d3.select('.yAxis').remove();
+	histogram.append('g')
+  		.attr('class', 'axis yAxis')
+  		.call(d3.axisLeft(histScaleY).ticks(5));
+
+    // create bars with height 0
+	histogram.selectAll('.bar')
+	    .data(counts)
 	    .enter()
 	    .append('rect')
-	    .attr('class', 'xBar')
-	    .attr('width', histScaleX(1))
+	    .attr('class', 'bar')
+	    .attr('width', barWidth)
 	    .attr('height', 0)
-	    .attr('x', function (d, i) {return i * histScaleX(1)})
+	    .attr('x', function (d, i) {return i * barWidth})
 	    .attr('y', histHeight)
 	    .attr('fill', 'steelblue')
 	    .attr('stroke', d3.rgb('steelblue').darker());
 
-	// // update x axis histogram
- //  graph.selectAll('.xDot')
- //    .each(function (d,i) {
- //      myData = xHistData[i];
+	// update bars
+    d3.selectAll('.bar')
+      .transition()
+      .duration(200)
+      .attr('height', function (d,i) {return histHeight - histScaleY(counts[i])})
+      .attr('y', function (d,i) {return histScaleY(counts[i])});
 
- //      d3.selectAll('.xBar')
- //        .transition()
- //        .delay(tt * i)
- //        .attr('height', function (dd, ii) {return myData[ii]})
- //        .attr('y', function (dd, ii) {return xHistHeight - myData[ii]});
-
- //      xMax = d3.max(xHistArray[i]);
- //      scale = d3.scaleLinear().domain([0,xMax]).range([xHistHeight, 0]);
- //      xHist.selectAll('g').filter('.yAxis')
- //        .transition()
- //        .delay(tt * i)
- //        .call(d3.axisLeft(scale).ticks(5));    
- //    })
-
-} // end of data_ready
+} // end of explore
 
 
 
-// hist_group.append('rect').attr('x',100).attr('y',100).attr('width',100).attr('height',100).attr('fill','black');
 
 
 
