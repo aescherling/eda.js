@@ -79,8 +79,6 @@ function calcHist(x, low, high, bins) {
 // also updates the y variable of the scatterplot
 function updateHist(x) {
 
-	myVar = x;
-
 	var xMin = d3.min(x);
 	var xMax = d3.max(x);
 
@@ -139,7 +137,7 @@ function updateScatter(x) {
 
 // function for creating a variable selector
 function makeSelector(id, data, variables, mousemove, transform) {
-	// if a filter with this id already exists, remove it
+	// if a selector with this id already exists, remove it
 	d3.selectAll('#' + id).remove();
 
 	// set dimensions
@@ -176,7 +174,14 @@ function makeSelector(id, data, variables, mousemove, transform) {
     // dot shows the current variable selection
     var dot = selector.append("circle")
     	.attr('class', 'dot')
-        .attr('cx', x(0))
+        .attr('cx', function() {
+        	if (mousemove=="histogram") {
+        		out = x(0);
+        	} else if (mousemove=="scatterplot") {
+        		out = x(1);
+        	}
+        	return(out);
+        })
         .attr('cy', y(0))
         .attr("r", 5);
 
@@ -258,15 +263,24 @@ function load_data(csv) {
   explore(data);
 }
 
+
 // function to plot the data
 function explore(data) {
-	// if (error) throw error;
+	// remove all histogram bars and scatterplot points
+	d3.select('#histogram').selectAll('.bar').remove();
+	d3.select('#scatterplot').selectAll('.point').remove();
 
 	// get a list of the variable names
 	var varNames = Object.keys(data[0]);
 
+    // create a toolbar for switching the histogram variable (and y variable of scatterplot)
+    var selector1 = makeSelector('selector1', data, varNames, 'histogram', 'translate(105,350)');
+
+    // create a toolbar for switching the x variable of scatterplot
+    var selector2 = makeSelector('selector2', data, varNames, 'scatterplot', 'translate(405,350)');
+
 	// create crossfilter
-	var cf = crossfilter(data);
+	// var cf = crossfilter(data);
 
 	// add bars with height 0 to the histogram
 	var bins = 10;
@@ -283,31 +297,35 @@ function explore(data) {
 	    .attr('fill', 'steelblue')
 	    .attr('stroke', d3.rgb('steelblue').darker());
 
-	// default to selecting the first column of the csv
+	// default to selecting the first column of the csv for the histogram and y axis of scatterplot
 	// later the user will be able to try all the different variables
+	d3.select('#selector1').select('text').text(varNames[0]);
+	d3.select('#yAxisLabel').text(varNames[0]);
 	var y = data.map(function(d) {return +d[varNames[0]]});
-	updateHist(y);
+	var yMin = d3.min(y);
+	var yMax = d3.max(y);
+	scatterScaleY = d3.scaleLinear().domain([Math.floor(yMin), Math.ceil(yMax)]).range([histHeight, 0]);
+
+	// default to selecting the second column of the csv for the x axis of scatterplot
+	d3.select('#selector2').select('text').text(varNames[1]);
+	var x = data.map(function(d) {return +d[varNames[1]]});
+	var xMin = d3.min(x);
+	var xMax = d3.max(x);
+	scatterScaleX = d3.scaleLinear().domain([Math.floor(xMin), Math.ceil(xMax)]).range([0, histWidth]);
 
 	// add points to the scatterplot
+	var blankArray = Array(data.length);
 	d3.select('#scatterplot').selectAll(".point")
-		.data(data)
+		.data(blankArray)
 		.enter().append("circle")
 		.attr("class", "point")
 		.attr("r", 3.5)
-		.attr("cx", 0)
+		.attr("cx", function(d,i) {return(scatterScaleX(x[i]))})
 		.attr("cy", 0)
 		.style("fill", "none");
 
-	// default to selecting the second column of the csv
-	var x = data.map(function(d) {return +d[varNames[1]]});
-	updateScatter(x);
-
-    // create a toolbar for switching the histogram variable (and y variable of scatterplot)
-    var selector1 = makeSelector('selector1', data, varNames, 'histogram', 'translate(105,350)');
-
-    // create a toolbar for switching the x variable of scatterplot
-    var selector2 = makeSelector('selector2', data, varNames, 'scatterplot', 'translate(405,350)');
-
+	updateHist(y);
+	
 
 } // end of explore
 
