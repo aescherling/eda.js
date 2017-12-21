@@ -30,7 +30,6 @@ histogram.append('g')
   .attr('transform', 'translate(0,' + histHeight + ')')
   .call(d3.axisBottom(x_scale).ticks(5));
 
-
 // create a scatterplot group
 var scatterplot = svg.append('g')
 	.attr('id', 'scatterplot')
@@ -45,6 +44,15 @@ scatterplot.append('g')
   .attr('class', 'axis xAxis')
   .attr('transform', 'translate(0,' + histHeight + ')')
   .call(d3.axisBottom(x_scale).ticks(5));
+
+// label the y axis of the scatterplot
+scatterplot.append('text')
+	.attr('id', 'yAxisLabel')
+	.attr("x", -40)
+    .attr("y", 100)
+    .attr('transform','rotate(-90 -40,100)')
+    .attr("text-anchor", "middle")
+    .text("");
 
 
 // function for calculating the counts necessary for producing a histogram
@@ -184,6 +192,7 @@ function makeSelector(id, data, variables, mousemove, transform) {
 		var i = Math.min(Math.round(x.invert(d3.mouse(this)[0])), variables.length-1);
 		dot.attr('cx', x(i)).attr('cy', y(i));
 		varName.text(variables[i]);
+		d3.select('#yAxisLabel').text(variables[i]);
 	
 		// update the histogram to view the selected variable
 		var newVar = data.map(function(d) {return +d[variables[i]]});
@@ -219,14 +228,39 @@ function makeSelector(id, data, variables, mousemove, transform) {
 
 
 // when the data have loaded, explore!
-queue()
-  .defer(d3.csv, 'myData.csv')
-  .await(explore);
+// queue()
+//   .defer(d3.csv, 'myData.csv')
+//   .await(explore);
 
+// alternatively, upload a file
+// http://bl.ocks.org/syntagmatic/raw/3299303/
+function upload_button(el, callback) {
+  var uploader = document.getElementById(el);  
+  var reader = new FileReader();
+
+  reader.onload = function(e) {
+    var contents = e.target.result;
+    callback(contents);
+  };
+
+  uploader.addEventListener("change", handleFiles, false);  
+
+  function handleFiles() {
+    var file = this.files[0];
+    reader.readAsText(file);
+  };
+};
+upload_button('files', load_data);
+
+// load dataset and explore!
+function load_data(csv) {
+  var data = d3.csvParse(csv);
+  explore(data);
+}
 
 // function to plot the data
-function explore(error, data) {
-	if (error) throw error;
+function explore(data) {
+	// if (error) throw error;
 
 	// get a list of the variable names
 	var varNames = Object.keys(data[0]);

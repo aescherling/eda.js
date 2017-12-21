@@ -1,9 +1,16 @@
 - initial dataset:
-	- plot a scatterplot of two variables
 	- add filtering
+	- for histogram, add quartiles, mean, variance
+	- for scatterplot, add correlation
+
+- figure out why it breaks on data with spaces
 
 - figure out how to deal with categorical data
 
 - figure out how to upload a dataset
+	- see http://bl.ocks.org/syntagmatic/raw/3299303/
+	- or https://www.html5rocks.com/en/tutorials/file/dndfiles/
 
 - allow the user to change the number of bins
+
+- allow the user to transform variables
