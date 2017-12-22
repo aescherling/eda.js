@@ -1,32 +1,32 @@
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+
 	<script src="lib/d3_v4.js"></script>
 	<script src="lib/crossfilter.min.js"></script>
 	<script src="lib/queue.js"></script>
+
+  <title>seda</title>
 </head>
 
-<h2>seda test page</h2>
-<input type="file" id="files" name="files[]" multiple />
-<!-- <output id="list"></output>
 
-<script>
-  function handleFileSelect(evt) {
-    var files = evt.target.files; // FileList object
+<div class="container">
+  <div style="height:50px"></div>
+  <div class="row">
+    <div class="col-md-2"></div>
+    <div class="col-md-8">
+      <h2>simple exploratory data analysis</h2>
+      <p>Upload a csv file to view it interactively.</p>
+      <input type="file" id="files" name="files[]" multiple />
+      <div id="viz"></div>
+    </div>
+  </div>
+</div>
 
-    // files is a FileList of File objects. List some properties.
-    var output = [];
-    for (var i = 0, f; f = files[i]; i++) {
-      output.push('<li><strong>', escape(f.name), '</strong> (', f.type || 'n/a', ') - ',
-                  f.size, ' bytes, last modified: ',
-                  f.lastModifiedDate ? f.lastModifiedDate.toLocaleDateString() : 'n/a',
-                  '</li>');
-    }
-    document.getElementById('list').innerHTML = '<ul>' + output.join('') + '</ul>';
-  }
-
-  document.getElementById('files').addEventListener('change', handleFileSelect, false);
-</script> -->
-<div id="viz"></div>
 
 <script src="seda.js"></script>
 

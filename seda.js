@@ -84,11 +84,12 @@ function updateHist(x) {
 
 	// calculate the counts of the chosen variable using calcHist
 	var bins = 10;
-	var counts = calcHist(x, Math.floor(xMin), Math.ceil(xMax), bins);
+	var counts = calcHist(x, Math.round(xMin)-1, Math.round(xMax)+1, bins);
+	myVar = counts;
 	var stepSize = (Math.ceil(xMax) - Math.floor(xMin)) / bins;
 
 	// rescale/relabel x axis of histogram
-	histScaleX = d3.scaleLinear().domain([Math.floor(xMin), Math.ceil(xMax)]).range([0, histWidth]);
+	histScaleX = d3.scaleLinear().domain([Math.round(xMin)-1, Math.round(xMax)+1]).range([0, histWidth]);
 	d3.select('#histogram').select('.xAxis').call(d3.axisBottom(histScaleX).ticks(5));
 
   	// rescale/relabel y axis of histogram

@@ -1,4 +1,5 @@
 - initial dataset:
+	- remove all rows with missing data and tell the user how many rows were removed
 	- add filtering
 	- for histogram, add quartiles, mean, variance
 	- for scatterplot, add correlation
