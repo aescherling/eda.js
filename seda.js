@@ -8,6 +8,10 @@ var svg = d3.select('#viz').append('svg')
 	.attr('height', '400px')
 	.attr('width', '700px');
 
+// add text elements for warnings about the data load
+var categoricalWarning = svg.append('text').attr('y', 25);
+var missingnessWarning = svg.append('text').attr('y', 50);
+
 // create a histogram group
 var histogram = svg.append('g')
 	.attr('id','histogram')
@@ -260,6 +264,10 @@ upload_button('files', load_data);
 
 // load dataset and explore!
 function load_data(csv) {
+  // clear any warning messages
+  categoricalWarning.text('');
+  missingnessWarning.text('');
+  // load the data and explore!
   var data = d3.csvParse(csv);
   explore(data);
 }
@@ -267,12 +275,93 @@ function load_data(csv) {
 
 // function to plot the data
 function explore(data) {
+
+	// get a list of the variable names
+	var varNames = Object.keys(data[0]);
+
+	// convert all categorical variables to numeric
+	// if a column contains no numbers, find all unique values (other than "NA", "", or ".") and assign a number
+	var n = data.length;
+	var p = varNames.length;
+	var categoricalVars = [];
+	// loop over each column
+	for (j=0; j<p; j++) {
+		// classify each observation in the column as missing, non-numeric, or numeric
+		var nMissing = 0;
+		var nNaN = 0;
+		var nNumeric = 0;
+		var varClass = data.map(function(d) {
+			var out;
+			var valueTmp = d[varNames[j]];
+			if (valueTmp=="" | valueTmp=="." | valueTmp=="NA" | valueTmp=="NaN") {
+				out = "missing";
+				nMissing++;
+			} else if (isNaN(valueTmp)) {
+				out = "non-numeric";
+				nNaN++;
+			} else {
+				out = "numeric";
+				nNumeric++;
+			}
+			return(out);
+		});
+		// if nNaN/n > 0.5, classify as a categorical variable. assign a number to each unique value
+		if (nNaN/n > 0.5) {
+			categoricalVars.push(varNames[j]);
+			// create an array for the jth variable
+			var tmpVar = data.map(function(d) {return(d[varNames[j]]);});
+			// find the unique values
+			var unique = tmpVar.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort();
+			// assign each value of the variable to its index in the unique set of items
+			var numVar = tmpVar.map(function(d) {return(unique.indexOf(d));})
+			// recode the variable
+			for (i=0; i<n; i++){
+				data[i][varNames[j]] = numVar[i];
+			}
+		}
+
+	}
+
+	// display a message if any variables were identified as categorical
+	if (categoricalVars.length > 0 & categoricalVars.length < 4) {
+		categoricalWarning.text('The following variables have been identified as categorical variables: ' + categoricalVars);	
+	} else if (categoricalVars.length > 3) {
+		categoricalWarning.text('Warning: ' + categoricalVars.length + ' columns were identified as categorical variables.');
+	}
+	
+
+	// remove all rows with missing values
+	var missingRows = [];
+	for (i=0; i<n; i++) {
+		for (j=0; j<p; j++) {
+			var valueTmp = data[i][varNames[j]];
+			if (valueTmp==="" | valueTmp=="." | valueTmp=="NA" | valueTmp=="NaN") {
+				missingRows.push(i+1);
+			}
+		}
+	}
+	var uniqueRows = missingRows.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort();
+	var newData = [];
+	for (i=0; i<n; i++) {
+		if (uniqueRows.indexOf(i+1)===-1) {
+			newData.push(data[i]);
+		}
+	}
+	data = newData;
+
+	// display a message if any rows were removed
+	if (categoricalVars.length > 0 & categoricalVars.length < 4) {
+		missingnessWarning.text('The following observations have been removed due to missing data: ' + uniqueRows);
+	} else if (categoricalVars.length > 3) {
+		missingnessWarning.text('Warning: ' + uniqueRows.length + ' observations were removed due to missing data.');
+	}
+	
+
+
 	// remove all histogram bars and scatterplot points
 	d3.select('#histogram').selectAll('.bar').remove();
 	d3.select('#scatterplot').selectAll('.point').remove();
 
-	// get a list of the variable names
-	var varNames = Object.keys(data[0]);
 
     // create a toolbar for switching the histogram variable (and y variable of scatterplot)
     var selector1 = makeSelector('selector1', data, varNames, 'histogram', 'translate(105,350)');
