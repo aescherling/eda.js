@@ -1,3 +1,7 @@
+- redesign: make the left square a (p x p) selector for a single chart. 
+  selections on the diagonal show histograms.
+  off-diagonal selections show scatterplots, or 2-D histograms
+
 - initial dataset:
 	- add filtering
 	- for histogram, add quartiles, mean, variance
